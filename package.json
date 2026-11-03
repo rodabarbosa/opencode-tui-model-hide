@@ -1,0 +1,40 @@
+{
+  "name": "opencode-tui-model-hide",
+  "version": "1.0.0",
+  "description": "/hide-model command that hides models from the OpenCode /models selector",
+  "type": "module",
+  "exports": {
+    ".": "./index.ts",
+    "./tui": "./tui.tsx",
+    "./rpc": "./rpc.ts"
+  },
+  "files": [
+    "index.ts",
+    "tui.tsx",
+    "rpc.ts",
+    "README.md"
+  ],
+  "keywords": [
+    "opencode",
+    "plugin",
+    "opencode-plugin",
+    "tui",
+    "models",
+    "hide-models"
+  ],
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@opencode/plugin": "2.2.5",
+    "@opentui/core": "0.8.0",
+    "@opentui/solid": "0.8.0",
+    "solid-js": "1.9.17"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^5.9.0"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "pack:dry": "npm pack --dry-run"
+  }
+}
