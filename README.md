@@ -74,7 +74,27 @@ the catalog complete even after models are hidden.
 Requires OpenCode 2.2.5+ with the V2 plugin API. One package entry loads both parts —
 the server part that filters `/models` and the TUI part with the dialog.
 
-### From npm (recommended)
+### From Git (recommended)
+
+```bash
+opencode plugin add rodabarbosa/opencode-tui-model-hide
+```
+
+Installs the repository's default branch through the package entry, without depending on
+the npm registry. The single entry loads every part: the server part (`.`), the TUI part
+(`./tui`) and the RPC contract (`./rpc`), resolved through `package.json` `exports`.
+`opencode plugin update` compares the `version` field.
+
+Restart the TUI (or run `/reload`) afterwards. Manage the install with:
+
+```bash
+opencode plugin list                            # shows hide-model <version>
+opencode plugin check                           # is a newer version available?
+opencode plugin update                          # update
+opencode plugin remove opencode-tui-model-hide  # uninstall
+```
+
+### From npm
 
 ```bash
 opencode plugin add opencode-tui-model-hide          # latest
@@ -85,20 +105,10 @@ opencode plugin add opencode-tui-model-hide@1.0.0    # pinned version
 a local directory, a `file:` path and a `.tgz` are rejected (`Error: Plugin target must be
 an npm registry package or Git package specifier`, checked on 2.2.5). The command installs
 the package, caches it under `~/.cache/opencode/npm/` and appends it to the global
-configuration. The single entry loads every part: the server part (`.`), the TUI part
-(`./tui`) and the RPC contract (`./rpc`), resolved through `package.json` `exports`.
-
-Restart the TUI (or run `/reload`) afterwards. Manage the install with:
-
-```bash
-opencode plugin list                            # shows hide-model <version>
-opencode plugin check                           # is a newer version available?
-opencode plugin update                          # update to the registry version
-opencode plugin remove opencode-tui-model-hide  # uninstall
-```
+configuration.
 
 > If `opencode plugin add` returns a 404, the package has not been published yet. Use the
-> Git specifier or a local copy below, or publish it first (see [Publishing](#publishing)).
+> Git specifier above or a local copy below.
 
 The same package can be listed directly in `opencode.json(c)` by name (or name plus
 version):
@@ -109,15 +119,6 @@ version):
   "plugins": ["opencode-tui-model-hide@1.0.0"]
 }
 ```
-
-### From Git
-
-```bash
-opencode plugin add rodabarbosa/opencode-tui-model-hide
-```
-
-Installs the repository's default branch through the same package entry; no npm
-publication is required. `opencode plugin update` compares the `version` field.
 
 ### Local (development)
 

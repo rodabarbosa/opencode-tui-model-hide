@@ -36,8 +36,8 @@ npm publish         # requires `npm login`; prepublishOnly runs the typecheck
 
 - **The plugin must be published and installable via the command.** A change is only
   shippable when `npm publish` succeeds and both paths resolve:
-  `opencode plugin add opencode-tui-model-hide` (registry) and
-  `opencode plugin add rodabarbosa/opencode-tui-model-hide` (Git). Confirm the result
+  `opencode plugin add rodabarbosa/opencode-tui-model-hide` (Git, the primary documented
+  method) and `opencode plugin add opencode-tui-model-hide` (registry). Confirm the result
   with `opencode plugin list` showing `hide-model <version>`.
 - Every release: bump `version` (`npm version patch --no-git-tag-version`), run
   `npm run typecheck` and `npm pack --dry-run` (6 files: sources, README, LICENSE), then
