@@ -22,7 +22,19 @@
     "models",
     "hide-models"
   ],
-  "license": "UNLICENSED",
+  "license": "MIT",
+  "author": "Rodrigo Araujo Barbosa",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rodabarbosa/opencode-tui-model-hide.git"
+  },
+  "homepage": "https://github.com/rodabarbosa/opencode-tui-model-hide#readme",
+  "bugs": {
+    "url": "https://github.com/rodabarbosa/opencode-tui-model-hide/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "@opencode/plugin": "2.2.5",
     "@opentui/core": "0.8.0",
@@ -35,6 +47,7 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "pack:dry": "npm pack --dry-run"
+    "pack:dry": "npm pack --dry-run",
+    "prepublishOnly": "npm run typecheck"
   }
 }

@@ -1,5 +1,6 @@
+/** @jsxImportSource @opentui/solid */
 import { For, Show, createSignal, onMount } from "solid-js"
-import type { KeyEvent, ScrollBoxRenderable } from "@opentui/core"
+import { TextAttributes, type KeyEvent, type ScrollBoxRenderable } from "@opentui/core"
 import { Plugin } from "@opencode/plugin/tui"
 import { HideModel, keyOf, parseState, type ModelRef } from "./rpc"
 
@@ -44,6 +45,17 @@ export default Plugin.define({
     const [viewport, setViewport] = createSignal(context.renderer.height)
     const onResize = () => setViewport(context.renderer.height)
     context.renderer.on("resize", onResize)
+
+    // Same palette as the model-price dialog: the dialog surface when the host
+    // exposes one, otherwise the base theme. Every color below has a fallback so
+    // the window still renders with a minimal theme.
+    const theme = () => {
+      try {
+        return (context.theme as any).surface?.("dialog") || context.theme
+      } catch {
+        return context.theme
+      }
+    }
 
     let isOpen = false
     let queue: Promise<void> = Promise.resolve()
@@ -166,7 +178,6 @@ export default Plugin.define({
     }
 
     const View = () => {
-      const theme = context.theme
       const location = context.location ?? context.data.location.default()
 
       // Reapplies the widest preset once our content is mounted, so the window never
@@ -203,13 +214,17 @@ export default Plugin.define({
 
       return (
         <box flexDirection="column" width="100%">
-          <text fg={theme.text.base}>Models hidden from /models</text>
-          <text fg={theme.text.muted}>
+          <text attributes={TextAttributes.BOLD} fg={theme().text?.base || "white"}>
+            Models hidden from /models
+          </text>
+          <text fg={theme().text?.muted || "gray"}>
             {`${rows().filter((row) => row.hidden).length} hidden of ${rows().length}`}
           </text>
           <Show
             when={rows().length > 0}
-            fallback={<text fg={theme.text.faint}>No models available in this project.</text>}
+            fallback={
+              <text fg={theme().text?.muted || "gray"}>No models available in this project.</text>
+            }
           >
             <scrollbox
               ref={(node: ScrollBoxRenderable) => {
@@ -222,43 +237,75 @@ export default Plugin.define({
               <For each={groups()}>
                 {(group, position) => (
                   <box flexDirection="column" width="100%" marginTop={position() === 0 ? 0 : 1}>
-                    <box
-                      width="100%"
-                      backgroundColor={theme.background.raised.base}
-                      paddingLeft={1}
-                      paddingRight={1}
-                    >
-                      <text fg={theme.text.base}>
+                    <box width="100%" paddingLeft={1} paddingRight={1}>
+                      <text
+                        attributes={TextAttributes.BOLD}
+                        fg={theme().text?.selected || "cyan"}
+                        wrapMode="none"
+                      >
                         {`${providerLabel(group.providerID)} · ${group.rows.length} model(s) · ${group.rows.filter((entry) => entry.row.hidden).length} hidden`}
                       </text>
                     </box>
                     <For each={group.rows}>
-                      {(entry) => (
-                        <box
-                          id={rowID(entry.index)}
-                          width="100%"
-                          paddingLeft={1}
-                          backgroundColor={
-                            entry.index === cursor() ? theme.background.raised.high : undefined
-                          }
-                          onMouseUp={(event) => {
-                            if (event.button !== 0) return
-                            jump(entry.index)
-                            toggleAt(entry.index)
-                          }}
-                        >
-                          <text fg={entry.index === cursor() ? theme.text.base : theme.text.muted}>
-                            {`${entry.index === cursor() ? ">" : " "} ${entry.row.hidden ? "[x]" : "[ ]"} ${entry.row.name} (${entry.row.modelID})`}
-                          </text>
-                        </box>
-                      )}
+                      {(entry) => {
+                        const isCursor = () => entry.index === cursor()
+                        return (
+                          <box
+                            id={rowID(entry.index)}
+                            width="100%"
+                            paddingLeft={1}
+                            paddingRight={1}
+                            onMouseUp={(event) => {
+                              if (event.button !== 0) return
+                              jump(entry.index)
+                              toggleAt(entry.index)
+                            }}
+                          >
+                            <box flexDirection="row" gap={1}>
+                              <text
+                                attributes={isCursor() ? TextAttributes.BOLD : TextAttributes.NONE}
+                                fg={
+                                  isCursor()
+                                    ? theme().text?.selected || "cyan"
+                                    : theme().text?.base || "white"
+                                }
+                                wrapMode="none"
+                              >
+                                {isCursor() ? "▶" : " "}
+                              </text>
+                              <text
+                                fg={entry.row.hidden ? "yellow" : theme().text?.muted || "gray"}
+                                wrapMode="none"
+                              >
+                                {entry.row.hidden ? "[x]" : "[ ]"}
+                              </text>
+                              <text
+                                attributes={isCursor() ? TextAttributes.BOLD : TextAttributes.NONE}
+                                fg={
+                                  isCursor()
+                                    ? theme().text?.selected || "cyan"
+                                    : theme().text?.base || "white"
+                                }
+                                wrapMode="none"
+                              >
+                                {entry.row.name}
+                              </text>
+                              <text fg={theme().text?.muted || "gray"} wrapMode="none">
+                                {`(${entry.row.modelID})`}
+                              </text>
+                            </box>
+                          </box>
+                        )
+                      }}
                     </For>
                   </box>
                 )}
               </For>
             </scrollbox>
           </Show>
-          <text fg={theme.text.faint}>space toggles · ↑/↓ moves · enter/esc closes · wheel scrolls</text>
+          <text fg={theme().text?.muted || "gray"}>
+            space toggles · ↑/↓ moves · enter/esc closes · wheel scrolls
+          </text>
         </box>
       )
     }

@@ -71,7 +71,57 @@ the catalog complete even after models are hidden.
 
 ## Installation
 
-OpenCode discovers the plugin in the global config directory:
+Requires OpenCode 2.2.5+ with the V2 plugin API. One package entry loads both parts —
+the server part that filters `/models` and the TUI part with the dialog.
+
+### From npm (recommended)
+
+```bash
+opencode plugin add opencode-tui-model-hide          # latest
+opencode plugin add opencode-tui-model-hide@1.0.0    # pinned version
+```
+
+`opencode plugin add` only accepts an npm registry package or a Git package specifier —
+a local directory, a `file:` path and a `.tgz` are rejected (`Error: Plugin target must be
+an npm registry package or Git package specifier`, checked on 2.2.5). The command installs
+the package, caches it under `~/.cache/opencode/npm/` and appends it to the global
+configuration. The single entry loads every part: the server part (`.`), the TUI part
+(`./tui`) and the RPC contract (`./rpc`), resolved through `package.json` `exports`.
+
+Restart the TUI (or run `/reload`) afterwards. Manage the install with:
+
+```bash
+opencode plugin list                            # shows hide-model <version>
+opencode plugin check                           # is a newer version available?
+opencode plugin update                          # update to the registry version
+opencode plugin remove opencode-tui-model-hide  # uninstall
+```
+
+> If `opencode plugin add` returns a 404, the package has not been published yet. Use the
+> Git specifier or a local copy below, or publish it first (see [Publishing](#publishing)).
+
+The same package can be listed directly in `opencode.json(c)` by name (or name plus
+version):
+
+```jsonc
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugins": ["opencode-tui-model-hide@1.0.0"]
+}
+```
+
+### From Git
+
+```bash
+opencode plugin add rodabarbosa/opencode-tui-model-hide
+```
+
+Installs the repository's default branch through the same package entry; no npm
+publication is required. `opencode plugin update` compares the `version` field.
+
+### Local (development)
+
+Copy or clone the directory into the global config directory:
 
 ```text
 <global-config>/plugins/opencode-tui-model-hide/index.ts   # server part
@@ -81,36 +131,7 @@ OpenCode discovers the plugin in the global config directory:
 
 Restart the TUI (or run `/reload`) after copying the directory. There is no build step.
 
-### From npm
-
-`opencode plugin add` only accepts an npm registry package or a Git package specifier — a local directory, a `file:` path
-and a `.tgz` are rejected (`Error: Plugin target must be an npm registry package or Git package specifier`, checked on
-2.2.5). So the package has to be published first (see [Publishing](#publishing)):
-
-```bash
-opencode plugin add opencode-tui-model-hide          # registry, latest
-opencode plugin add <user>/<repo>                    # Git repository
-```
-
-That installs the package, caches it under `~/.cache/opencode/npm/` and appends it to the global configuration; the
-plugin appears in `opencode plugin list` with its version. `opencode plugin update` / `check` / `remove` manage it
-afterwards. In `opencode.json(c)` the same package can be listed by name (or name plus version):
-
-```jsonc
-{
-  "$schema": "https://opencode.ai/config.json",
-  "plugins": ["opencode-tui-model-hide@1.0.0"]
-}
-```
-
-One entry loads every part: the server part (`.`), the TUI part (`./tui`) and the RPC contract (`./rpc`), resolved
-through `package.json` `exports`.
-
-> **Do not keep both.** While this directory stays under `~/.config/opencode/plugins/`, the same plugin also loads as a
-> local plugin, and OpenCode loads a local plugin and a package with the same name separately. After installing the
-> package, remove the local copy (or the `plugins` entry pointing at it) so only one instance registers `hide-model`.
-
-Alternative: register a local directory in `opencode.json(c)`:
+Alternative: register an arbitrary local directory in `opencode.json(c)`:
 
 ```jsonc
 {
@@ -119,37 +140,65 @@ Alternative: register a local directory in `opencode.json(c)`:
 }
 ```
 
-A **TUI-only** package would go in `cli.json`; since this plugin needs the server part to filter the catalog, the right
-file is `opencode.json(c)`.
+A **TUI-only** package would go in `cli.json`; since this plugin needs the server part to
+filter the catalog, the right file is `opencode.json(c)`.
+
+> **Do not keep both.** While this directory stays under `~/.config/opencode/plugins/`,
+> the same plugin also loads as a local plugin, and OpenCode loads a local plugin and a
+> package with the same name separately. After installing the package (or the Git
+> specifier), remove the local copy (or the `plugins` entry pointing at it) so only one
+> instance registers `hide-model`:
+>
+> ```bash
+> mv ~/.config/opencode/plugins/opencode-tui-model-hide ~/backup/
+> ```
 
 ## Publishing
 
-The package follows the V2 layout required by `opencode plugin add`: one package, parts declared in `exports`
-(`.` server, `./tui`, `./rpc`) and source shipped as TypeScript (`files` carries `index.ts`, `tui.tsx`, `rpc.ts` and
-`README.md`).
+The package follows the V2 layout required by `opencode plugin add`: one package, parts
+declared in `exports` (`.` server, `./tui`, `./rpc`) and source shipped as TypeScript
+(`files` carries `index.ts`, `tui.tsx`, `rpc.ts` and `README.md`; npm always adds
+`LICENSE`).
+
+### Prerequisites (one time)
+
+- An npm account with permission for the `opencode-tui-model-hide` name (confirm it is
+  still free with `npm view opencode-tui-model-hide version`; a `404` means free).
+- Authenticate the publishing machine: `npm login` (then `npm whoami` must succeed).
+
+### Release
 
 ```bash
-npm pack --dry-run        # inspect the tarball
-npm publish --access public
+bun install                              # dependencies for the typecheck (runtime + dev)
+npm run typecheck                        # same as: bun run typecheck
+npm pack --dry-run                       # inspect the tarball (sources + README + LICENSE)
+npm version patch --no-git-tag-version   # or minor/major — every publish needs a new version
+npm publish                              # prepublishOnly runs the typecheck; publishConfig.access=public
 ```
 
-Prerequisites checked on this machine: the name `opencode-tui-model-hide` is free on the registry (`npm view` returns
-404) and the npm CLI is **not** logged in (`npm whoami` → `ENEEDAUTH`), so publishing needs `npm adduser`/`npm login`
-first. The tarball itself was validated: `npm pack` produces 5 files (`index.ts`, `tui.tsx`, `rpc.ts`, `package.json`,
-`README.md`) and, once installed in a scratch project, `opencode-tui-model-hide` resolves `id: hide-model`,
-`opencode-tui-model-hide/rpc` exports the contract, and `@opencode/plugin/tui` plus `solid-js` resolve from the installed
-tree.
+Verify the release:
+
+```bash
+npm view opencode-tui-model-hide version
+opencode plugin add opencode-tui-model-hide
+opencode plugin list                     # hide-model <new version> opencode-tui-model-hide
+```
+
+Commit the version bump and push.
 
 Notes:
 
-- `version` must be bumped for every published change; `opencode plugin update` compares it with the registry.
-- The runtime dependencies declared in `package.json` (`@opencode/plugin`, `@opentui/core`, `@opentui/solid`, `solid-js`)
-  are installed with the package by the host, so the parts resolve the same APIs they use locally.
-- `license` is `UNLICENSED` for now: choosing a license (and adding a `LICENSE` file, `repository`, `homepage`) is a
-  decision for whoever publishes it.
-- The doc in `temp/instalador.md` describes the V1 plugin format (CommonJS `module.exports = function (ctx)` and files
-  copied into the plugin directory). It does not apply to V2: here the parts are ES modules created with
-  `Plugin.define`, resolved through `exports`, and installed as an npm package.
+- `prepublishOnly` runs `npm run typecheck`, so a broken build cannot be published.
+- `version` must be bumped for every published change; `opencode plugin update` compares
+  it with the registry.
+- The runtime dependencies declared in `package.json` (`@opencode/plugin`,
+  `@opentui/core`, `@opentui/solid`, `solid-js`) are installed with the package by the
+  host, so the parts resolve the same APIs they use locally.
+- `license` is MIT and the `LICENSE` file ships in the tarball.
+- The doc in `temp/instalador.md` describes the V1 plugin format (CommonJS
+  `module.exports = function (ctx)` and files copied into the plugin directory). It does
+  not apply to V2: here the parts are ES modules created with `Plugin.define`, resolved
+  through `exports`, and installed as an npm package.
 
 ## Structure
 
@@ -158,20 +207,23 @@ opencode-tui-model-hide/
 ├── index.ts        # server: storage + ctx.model.transform + RPC
 ├── tui.tsx         # TUI: /hide-model command + dialog
 ├── rpc.ts          # contract (JSON Schema) + normalizers
-├── package.json    # exports "." | "./tui" | "./rpc"; runtime deps + typings
+├── package.json    # exports "." | "./tui" | "./rpc"; runtime deps + npm metadata
 ├── tsconfig.json   # local typecheck (no emit)
 ├── README.md
+├── LICENSE         # MIT
 └── .gitignore
 ```
 
 `package.json` declares the `exports` the loader resolves, the runtime dependencies (`@opencode/plugin`, `@opentui/core`,
-`@opentui/solid`, `solid-js`) and `files`, so the published tarball carries only the sources and the README.
+`@opentui/solid`, `solid-js`), the npm metadata (`repository`, `homepage`, `bugs`, `publishConfig`) and `files`, so the
+published tarball carries only the sources, the README and the license.
 
 ## Development
 
 ```bash
-bun install          # installs development dependencies only
-bun x tsc --noEmit   # typecheck
+bun install          # installs the full dependency tree (runtime + dev)
+bun run typecheck    # tsc --noEmit
+npm pack --dry-run   # inspect what would be published
 ```
 
 ## Verification
@@ -180,7 +232,8 @@ What was executed and the observed result:
 
 | Check | Command | Result |
 | --- | --- | --- |
-| Types | `bun x tsc --noEmit` | no errors |
+| Types | `bun run typecheck` | no errors |
+| Publish tarball | `npm pack --dry-run` | 6 files: `index.ts`, `tui.tsx`, `rpc.ts`, `package.json`, `README.md`, `LICENSE` |
 | Plugin loaded | `opencode api get /api/plugin` | `hide-model` with `server`, `tui` and `rpc` active |
 | Window catalog | `POST /api/rpc/hide-model/list` | 364 models (the same 364 as `/api/model`) |
 | Hide | `POST /api/rpc/hide-model/set` + `GET /api/model` | 364 → 363 visible models; the marked model disappeared |
