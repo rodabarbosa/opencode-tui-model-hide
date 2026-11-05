@@ -1,28 +1,30 @@
 # AGENTS.md
 
 OpenCode v2 plugin: `/hide-model` opens a dialog to mark chat models that should
-disappear from the `/models` selector. OpenCode loads the TypeScript sources
-directly — there is no build step.
+disappear from the `/models` selector. Sources are TypeScript; the published parts are
+bundled JS in `dist/` (committed, because the Git install path does not build).
 
 ## Entrypoints (`package.json` `exports`)
 
 | Export | File | Role |
 | ------ | ---- | ---- |
-| `.` | `index.ts` | Server plugin (`id: hide-model`): storage, `ctx.model.transform`, RPC |
-| `./tui` | `tui.tsx` | OpenTUI/Solid dialog (`id: hide-model-tui`) and `/hide-model` command |
-| `./rpc` | `rpc.ts` | RPC contract (JSON Schema) + `unknown` normalizers |
+| `.` | `dist/index.js` ← `index.ts` | Server plugin (`id: hide-model`): storage, `ctx.model.transform`, RPC |
+| `./tui` | `dist/tui.js` ← `tui.tsx` | OpenTUI/Solid dialog (`id: hide-model-tui`) and `/hide-model` command |
+| `./rpc` | `dist/rpc.js` ← `rpc.ts` | RPC contract (JSON Schema) + `unknown` normalizers |
 
-OpenCode resolves the parts through `exports`; a new part must be added there (and
-to `files` if it ships to npm). Parts load independently — the TUI cannot rely on
-server modules being imported in the same process.
+OpenCode resolves the parts through `exports`; a new part must be added there (and to
+`scripts/bundle.ts` entrypoints + `files`). Parts load independently — the TUI cannot
+rely on server modules being imported in the same process.
 
 ## Commands
 
 ```bash
-bun install         # required before typecheck; installs the full tree (~356 pkgs)
-bun run typecheck   # tsc --noEmit (same as: bun x tsc --noEmit)
-npm pack --dry-run  # inspect the publish tarball (6 files incl. LICENSE)
-npm publish         # requires `npm login`; prepublishOnly runs the typecheck
+bun install         # dev deps for typecheck + bundle
+bun run build       # typecheck + bundle into dist/ (commit dist/)
+bun run typecheck   # tsc --noEmit only
+bun run bundle      # Bun.build only
+npm pack --dry-run  # inspect the publish tarball (3 dist files + README + LICENSE)
+npm publish         # requires `npm login`; prepublishOnly runs the build
 ```
 
 - No test, lint, formatter or CI setup exists. Do not invent them or claim they ran.
@@ -40,11 +42,15 @@ npm publish         # requires `npm login`; prepublishOnly runs the typecheck
   method) and `opencode plugin add opencode-tui-model-hide` (registry). Confirm the result
   with `opencode plugin list` showing `hide-model <version>`.
 - Every release: bump `version` (`npm version patch --no-git-tag-version`), run
-  `npm run typecheck` and `npm pack --dry-run` (6 files: sources, README, LICENSE), then
-  `npm publish` after `npm login`. `prepublishOnly` enforces the typecheck.
-- The published tarball must keep the `exports` for `.` / `./tui` / `./rpc`, the sources
-  in `files`, and the `/** @jsxImportSource @opentui/solid */` pragma in `tui.tsx` — the
-  installed TUI part does not load without the pragma.
+  `npm run build`, commit `dist/`, run `npm pack --dry-run` (6 files: 3 in `dist/` +
+  `package.json` + README + LICENSE), then `npm publish` after `npm login`.
+  `prepublishOnly` runs the build.
+- The published tarball must keep `exports` pointing at `dist/`, `files` = `dist` +
+  `README.md`, and the JSX pragma in `tui.tsx`. **Never ship `.tsx`** or nested copies of
+  `solid-js`/`@opentui/*`: OpenCode then loads a second Solid instance and the dialog
+  opens but stops responding.
+- Because Git installs (the primary path) do not build, `dist/` is committed: rebuild and
+  commit it whenever a source file changes, or the installed plugin runs stale code.
 - After installing from the registry or Git, remove the local copy from
   `~/.config/opencode/plugins/` so `hide-model` is not registered twice.
 
@@ -68,11 +74,10 @@ npm publish         # requires `npm login`; prepublishOnly runs the typecheck
 
 ## TUI gotchas
 
-- **`tui.tsx` line 1 must keep `/** @jsxImportSource @opentui/solid */`.** `tsconfig.json`
-  is not shipped in the npm tarball, so the installed `./tui` part relies on the pragma to
-  resolve the Solid JSX runtime; without it the import fails with
-  `Cannot find module 'react/jsx-runtime'`. Any new file rendering OpenTUI primitives
-  needs the same pragma.
+- **`tui.tsx` line 1 must keep `/** @jsxImportSource @opentui/solid */`.** `Bun.build`
+  compiles the JSX through that pragma (`tsconfig.json` is not used by the bundler);
+  without it the build fails with `Cannot find module 'react/jsx-runtime'`. Any new file
+  rendering OpenTUI primitives needs the same pragma.
 - `context.ui.dialog.set({ size })` only applies to the **active** dialog: call it
   after `dialog.show()`, and again in `onMount` (see `tui.tsx:75`, `tui.tsx:174`).
   `xlarge` (116 cols) is the widest preset; the dialog cannot grow past it.
@@ -91,8 +96,10 @@ npm publish         # requires `npm login`; prepublishOnly runs the typecheck
 - Colors follow the sibling `opencode-tui-model-price` dialog: obtain the theme with
   `theme().surface?.("dialog") || context.theme`, then use `text.selected` (cyan),
   `text.base` (white) and `text.muted` (gray) with those literal fallbacks; yellow
-  marks the hidden state, `▶` + bold marks the cursor. `@opentui` 0.8 has no `bold`
-  or `wrap` text props — use `attributes={TextAttributes.BOLD}` and `wrapMode="none"`.
+  marks the hidden state, `▶` + bold marks the cursor. `@opentui` 0.8 has no `bold` or
+  `wrap` text props — use `attributes={TEXT_BOLD}` / `TEXT_NONE` (local bit-flag constants)
+  and `wrapMode="none"`. Never import `@opentui/core` at runtime: it loads a second copy
+  of the library instead of the host instance.
 
 ## Conventions
 

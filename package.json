@@ -1,17 +1,15 @@
 {
   "name": "opencode-tui-model-hide",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "/hide-model command that hides models from the OpenCode /models selector",
   "type": "module",
   "exports": {
-    ".": "./index.ts",
-    "./tui": "./tui.tsx",
-    "./rpc": "./rpc.ts"
+    ".": "./dist/index.js",
+    "./tui": "./dist/tui.js",
+    "./rpc": "./dist/rpc.js"
   },
   "files": [
-    "index.ts",
-    "tui.tsx",
-    "rpc.ts",
+    "dist",
     "README.md"
   ],
   "keywords": [
@@ -35,19 +33,30 @@
   "publishConfig": {
     "access": "public"
   },
-  "dependencies": {
+  "peerDependencies": {
+    "@opencode/plugin": ">=2.0.0",
+    "@opentui/core": ">=0.6.6",
+    "@opentui/solid": ">=0.6.6",
+    "solid-js": ">=1.9.12"
+  },
+  "peerDependenciesMeta": {
+    "@opencode/plugin": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
     "@opencode/plugin": "2.2.5",
     "@opentui/core": "0.8.0",
     "@opentui/solid": "0.8.0",
-    "solid-js": "1.9.17"
-  },
-  "devDependencies": {
     "@types/node": "^26.6.6",
+    "solid-js": "1.9.17",
     "typescript": "^5.9.0"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
+    "bundle": "bun scripts/bundle.ts",
+    "build": "bun run typecheck && bun run bundle",
     "pack:dry": "npm pack --dry-run",
-    "prepublishOnly": "npm run typecheck"
+    "prepublishOnly": "bun run build"
   }
 }

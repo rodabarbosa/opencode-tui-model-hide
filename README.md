@@ -130,7 +130,9 @@ Copy or clone the directory into the global config directory:
 <global-config>/plugins/opencode-tui-model-hide/rpc.ts     # contract
 ```
 
-Restart the TUI (or run `/reload`) after copying the directory. There is no build step.
+Restart the TUI (or run `/reload`) after copying the directory. For local development
+OpenCode loads the TypeScript sources directly, so no build is needed there; published
+installs use the committed `dist/`.
 
 Alternative: register an arbitrary local directory in `opencode.json(c)`:
 
@@ -157,9 +159,13 @@ filter the catalog, the right file is `opencode.json(c)`.
 ## Publishing
 
 The package follows the V2 layout required by `opencode plugin add`: one package, parts
-declared in `exports` (`.` server, `./tui`, `./rpc`) and source shipped as TypeScript
-(`files` carries `index.ts`, `tui.tsx`, `rpc.ts` and `README.md`; npm always adds
-`LICENSE`).
+declared in `exports` (`.` server, `./tui`, `./rpc`). `files` ships the bundled `dist/`
+(built from `index.ts`, `tui.tsx`, `rpc.ts`) plus `README.md`; npm always adds `LICENSE`.
+
+The package must **not** ship `.tsx`: when OpenCode loads it from `~/.cache/opencode/npm`, a
+`.tsx` resolves `solid-js` and `@opentui/solid` from the plugin's own `node_modules`,
+creating a second Solid instance and a render loop — the dialog opens but stops responding.
+The bundle keeps those imports as bare specifiers so the host maps its own instances.
 
 ### Prerequisites (one time)
 
@@ -170,11 +176,11 @@ declared in `exports` (`.` server, `./tui`, `./rpc`) and source shipped as TypeS
 ### Release
 
 ```bash
-bun install                              # dependencies for the typecheck (runtime + dev)
-npm run typecheck                        # same as: bun run typecheck
-npm pack --dry-run                       # inspect the tarball (sources + README + LICENSE)
+bun install                              # dependencies for the build (typecheck + bundle)
+npm run build                            # typecheck + bundle into dist/
+npm pack --dry-run                       # inspect the tarball (dist + README + LICENSE)
 npm version patch --no-git-tag-version   # or minor/major — every publish needs a new version
-npm publish                              # prepublishOnly runs the typecheck; publishConfig.access=public
+npm publish                              # prepublishOnly runs the build; publishConfig.access=public
 ```
 
 Verify the release:
@@ -189,12 +195,16 @@ Commit the version bump and push.
 
 Notes:
 
-- `prepublishOnly` runs `npm run typecheck`, so a broken build cannot be published.
+- `prepublishOnly` runs `npm run build` (typecheck + bundle), so a broken or unbundled
+  package cannot be published.
 - `version` must be bumped for every published change; `opencode plugin update` compares
   it with the registry.
-- The runtime dependencies declared in `package.json` (`@opencode/plugin`,
-  `@opentui/core`, `@opentui/solid`, `solid-js`) are installed with the package by the
-  host, so the parts resolve the same APIs they use locally.
+- `@opencode/plugin`, `@opentui/core`, `@opentui/solid` and `solid-js` are
+  `peerDependencies` (provided by the OpenCode host), not `dependencies`: installing
+  nested copies is what caused the second Solid instance. `devDependencies` carries the
+  same packages for local typecheck/bundle only.
+- `dist/` is committed because the Git install path (the primary one) does not run a
+  build; rebuild and commit it whenever the sources change.
 - `license` is MIT and the `LICENSE` file ships in the tarball.
 - The doc in `temp/instalador.md` describes the V1 plugin format (CommonJS
   `module.exports = function (ctx)` and files copied into the plugin directory). It does
@@ -205,25 +215,33 @@ Notes:
 
 ```text
 opencode-tui-model-hide/
-├── index.ts        # server: storage + ctx.model.transform + RPC
-├── tui.tsx         # TUI: /hide-model command + dialog
-├── rpc.ts          # contract (JSON Schema) + normalizers
-├── package.json    # exports "." | "./tui" | "./rpc"; runtime deps + npm metadata
-├── tsconfig.json   # local typecheck (no emit)
+├── index.ts         # server: storage + ctx.model.transform + RPC (source)
+├── tui.tsx          # TUI: /hide-model command + dialog (source)
+├── rpc.ts           # contract (JSON Schema) + normalizers (source)
+├── scripts/
+│   └── bundle.ts    # Bun.build → dist/ (host modules kept external)
+├── dist/
+│   ├── index.js     # published server part
+│   ├── tui.js       # published TUI part
+│   └── rpc.js       # published contract
+├── package.json     # exports "." | "./tui" | "./rpc" → dist/; peer deps + npm metadata
+├── tsconfig.json    # local typecheck (no emit)
 ├── README.md
-├── LICENSE         # MIT
+├── LICENSE          # MIT
 └── .gitignore
 ```
 
-`package.json` declares the `exports` the loader resolves, the runtime dependencies (`@opencode/plugin`, `@opentui/core`,
-`@opentui/solid`, `solid-js`), the npm metadata (`repository`, `homepage`, `bugs`, `publishConfig`) and `files`, so the
-published tarball carries only the sources, the README and the license.
+`package.json` declares the `exports` the loader resolves (pointing at `dist/`), the
+`peerDependencies` provided by the host, the npm metadata (`repository`, `homepage`,
+`bugs`, `publishConfig`) and `files`, so the published tarball carries only the bundled
+`dist/`, the README and the license.
 
 ## Development
 
 ```bash
-bun install          # installs the full dependency tree (runtime + dev)
+bun install          # dev dependencies for typecheck + bundle
 bun run typecheck    # tsc --noEmit
+bun run build        # typecheck + bundle into dist/ (commit dist/)
 npm pack --dry-run   # inspect what would be published
 ```
 
@@ -234,7 +252,7 @@ What was executed and the observed result:
 | Check | Command | Result |
 | --- | --- | --- |
 | Types | `bun run typecheck` | no errors |
-| Publish tarball | `npm pack --dry-run` | 6 files: `index.ts`, `tui.tsx`, `rpc.ts`, `package.json`, `README.md`, `LICENSE` |
+| Publish tarball | `npm pack --dry-run` | 6 files: `dist/index.js`, `dist/tui.js`, `dist/rpc.js`, `package.json`, `README.md`, `LICENSE` |
 | Plugin loaded | `opencode api get /api/plugin` | `hide-model` with `server`, `tui` and `rpc` active |
 | Window catalog | `POST /api/rpc/hide-model/list` | 364 models (the same 364 as `/api/model`) |
 | Hide | `POST /api/rpc/hide-model/set` + `GET /api/model` | 364 → 363 visible models; the marked model disappeared |

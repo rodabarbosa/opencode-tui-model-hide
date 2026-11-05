@@ -1,6 +1,6 @@
 /** @jsxImportSource @opentui/solid */
 import { For, Show, createSignal, onMount } from "solid-js"
-import { TextAttributes, type KeyEvent, type ScrollBoxRenderable } from "@opentui/core"
+import type { KeyEvent, ScrollBoxRenderable } from "@opentui/core"
 import { Plugin } from "@opencode/plugin/tui"
 import { HideModel, keyOf, parseState, type ModelRef } from "./rpc"
 
@@ -14,6 +14,12 @@ type Row = ModelRef & { hidden: boolean }
 
 const PAGE = 10
 const ROW_PREFIX = "hide-model.row."
+
+// OpenTUI text attribute bit flags (TEXT_BOLD / NONE). Kept as local
+// constants so the TUI never imports @opentui/core at runtime: that would load a
+// second copy of the library instead of the host instance.
+const TEXT_BOLD = 1
+const TEXT_NONE = 0
 
 const describe = (error: unknown): string => (error instanceof Error ? error.message : String(error))
 
@@ -214,7 +220,7 @@ export default Plugin.define({
 
       return (
         <box flexDirection="column" width="100%">
-          <text attributes={TextAttributes.BOLD} fg={theme().text?.base || "white"}>
+          <text attributes={TEXT_BOLD} fg={theme().text?.base || "white"}>
             Models hidden from /models
           </text>
           <text fg={theme().text?.muted || "gray"}>
@@ -239,7 +245,7 @@ export default Plugin.define({
                   <box flexDirection="column" width="100%" marginTop={position() === 0 ? 0 : 1}>
                     <box width="100%" paddingLeft={1} paddingRight={1}>
                       <text
-                        attributes={TextAttributes.BOLD}
+                        attributes={TEXT_BOLD}
                         fg={theme().text?.selected || "cyan"}
                         wrapMode="none"
                       >
@@ -263,7 +269,7 @@ export default Plugin.define({
                           >
                             <box flexDirection="row" gap={1}>
                               <text
-                                attributes={isCursor() ? TextAttributes.BOLD : TextAttributes.NONE}
+                                attributes={isCursor() ? TEXT_BOLD : TEXT_NONE}
                                 fg={
                                   isCursor()
                                     ? theme().text?.selected || "cyan"
@@ -280,7 +286,7 @@ export default Plugin.define({
                                 {entry.row.hidden ? "[x]" : "[ ]"}
                               </text>
                               <text
-                                attributes={isCursor() ? TextAttributes.BOLD : TextAttributes.NONE}
+                                attributes={isCursor() ? TEXT_BOLD : TEXT_NONE}
                                 fg={
                                   isCursor()
                                     ? theme().text?.selected || "cyan"

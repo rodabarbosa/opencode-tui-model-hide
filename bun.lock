@@ -4,16 +4,23 @@
   "workspaces": {
     "": {
       "name": "opencode-tui-model-hide",
-      "dependencies": {
+      "devDependencies": {
         "@opencode/plugin": "2.2.5",
         "@opentui/core": "0.8.0",
         "@opentui/solid": "0.8.0",
-        "solid-js": "1.9.17",
-      },
-      "devDependencies": {
         "@types/node": "^26.6.6",
+        "solid-js": "1.9.17",
         "typescript": "^5.9.0",
       },
+      "peerDependencies": {
+        "@opencode/plugin": ">=2.0.0",
+        "@opentui/core": ">=0.6.6",
+        "@opentui/solid": ">=0.6.6",
+        "solid-js": ">=1.9.12",
+      },
+      "optionalPeers": [
+        "@opencode/plugin",
+      ],
     },
   },
   "packages": {
