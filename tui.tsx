@@ -128,6 +128,15 @@ export default Plugin.define({
       persist()
     }
 
+    /** Toggles one provider's header: hides all its models when any is visible, shows all otherwise. */
+    const toggleProvider = (providerID: string) => {
+      const list = rows()
+      if (!list.some((row) => row.providerID === providerID)) return
+      const hideAll = list.some((row) => row.providerID === providerID && !row.hidden)
+      setRows(list.map((row) => (row.providerID === providerID ? { ...row, hidden: hideAll } : row)))
+      persist()
+    }
+
     const move = (delta: number) => {
       const total = rows().length
       if (total === 0) return
@@ -243,14 +252,38 @@ export default Plugin.define({
               <For each={groups()}>
                 {(group, position) => (
                   <box flexDirection="column" width="100%" marginTop={position() === 0 ? 0 : 1}>
-                    <box width="100%" paddingLeft={1} paddingRight={1}>
-                      <text
-                        attributes={TEXT_BOLD}
-                        fg={theme().text?.selected || "cyan"}
-                        wrapMode="none"
-                      >
-                        {`${providerLabel(group.providerID)} · ${group.rows.length} model(s) · ${group.rows.filter((entry) => entry.row.hidden).length} hidden`}
-                      </text>
+                    <box
+                      width="100%"
+                      paddingLeft={1}
+                      paddingRight={1}
+                      onMouseUp={(event) => {
+                        if (event.button !== 0) return
+                        toggleProvider(group.providerID)
+                      }}
+                    >
+                      <box flexDirection="row" gap={1} width="100%">
+                        <text
+                          attributes={TEXT_BOLD}
+                          fg={theme().text?.selected || "cyan"}
+                          wrapMode="none"
+                        >
+                          {group.rows.every((entry) => entry.row.hidden)
+                            ? "[x]"
+                            : group.rows.some((entry) => entry.row.hidden)
+                              ? "[~]"
+                              : "[ ]"}
+                        </text>
+                        <text
+                          attributes={TEXT_BOLD}
+                          fg={theme().text?.selected || "cyan"}
+                          wrapMode="none"
+                        >
+                          {providerLabel(group.providerID)}
+                        </text>
+                        <text fg={theme().text?.muted || "gray"} wrapMode="none">
+                          {`· ${group.rows.length} model(s) · ${group.rows.filter((entry) => entry.row.hidden).length} hidden · click to toggle all`}
+                        </text>
+                      </box>
                     </box>
                     <For each={group.rows}>
                       {(entry) => {
@@ -309,8 +342,8 @@ export default Plugin.define({
               </For>
             </scrollbox>
           </Show>
-          <text fg={theme().text?.muted || "gray"}>
-            space toggles · ↑/↓ moves · enter/esc closes · wheel scrolls
+          <text fg={theme().text?.muted || "gray"} wrapMode="none">
+            space toggles row · click provider header toggles all its models · ↑/↓ moves · enter/esc closes · wheel scrolls
           </text>
         </box>
       )

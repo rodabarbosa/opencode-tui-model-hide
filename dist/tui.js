@@ -199,6 +199,17 @@ var tui_default = Plugin.define({
       } : item));
       persist();
     };
+    const toggleProvider = (providerID) => {
+      const list = rows();
+      if (!list.some((row) => row.providerID === providerID))
+        return;
+      const hideAll = list.some((row) => row.providerID === providerID && !row.hidden);
+      setRows(list.map((row) => row.providerID === providerID ? {
+        ...row,
+        hidden: hideAll
+      } : row));
+      persist();
+    };
     const move = (delta) => {
       const total = rows().length;
       if (total === 0)
@@ -318,7 +329,7 @@ var tui_default = Plugin.define({
                 return groups();
               },
               children: (group, position) => (() => {
-                var _el$0 = _$createElement("box"), _el$1 = _$createElement("box"), _el$10 = _$createElement("text");
+                var _el$0 = _$createElement("box"), _el$1 = _$createElement("box"), _el$10 = _$createElement("box"), _el$11 = _$createElement("text"), _el$12 = _$createElement("text"), _el$13 = _$createElement("text");
                 _$insertNode(_el$0, _el$1);
                 _$setProp(_el$0, "flexDirection", "column");
                 _$setProp(_el$0, "width", "100%");
@@ -326,9 +337,28 @@ var tui_default = Plugin.define({
                 _$setProp(_el$1, "width", "100%");
                 _$setProp(_el$1, "paddingLeft", 1);
                 _$setProp(_el$1, "paddingRight", 1);
-                _$setProp(_el$10, "attributes", 1);
-                _$setProp(_el$10, "wrapMode", "none");
-                _$insert(_el$10, () => `${providerLabel(group.providerID)} \xB7 ${group.rows.length} model(s) \xB7 ${group.rows.filter((entry) => entry.row.hidden).length} hidden`);
+                _$setProp(_el$1, "onMouseUp", (event) => {
+                  if (event.button !== 0)
+                    return;
+                  toggleProvider(group.providerID);
+                });
+                _$insertNode(_el$10, _el$11);
+                _$insertNode(_el$10, _el$12);
+                _$insertNode(_el$10, _el$13);
+                _$setProp(_el$10, "flexDirection", "row");
+                _$setProp(_el$10, "gap", 1);
+                _$setProp(_el$10, "width", "100%");
+                _$setProp(_el$11, "attributes", 1);
+                _$setProp(_el$11, "wrapMode", "none");
+                _$insert(_el$11, (() => {
+                  var _c$ = _$memo(() => !!group.rows.every((entry) => entry.row.hidden));
+                  return () => _c$() ? "[x]" : group.rows.some((entry) => entry.row.hidden) ? "[~]" : "[ ]";
+                })());
+                _$setProp(_el$12, "attributes", 1);
+                _$setProp(_el$12, "wrapMode", "none");
+                _$insert(_el$12, () => providerLabel(group.providerID));
+                _$setProp(_el$13, "wrapMode", "none");
+                _$insert(_el$13, () => `\xB7 ${group.rows.length} model(s) \xB7 ${group.rows.filter((entry) => entry.row.hidden).length} hidden \xB7 click to toggle all`);
                 _$insert(_el$0, _$createComponent(For, {
                   get each() {
                     return group.rows;
@@ -336,40 +366,40 @@ var tui_default = Plugin.define({
                   children: (entry) => {
                     const isCursor = () => entry.index === cursor();
                     return (() => {
-                      var _el$11 = _$createElement("box"), _el$12 = _$createElement("box"), _el$13 = _$createElement("text"), _el$14 = _$createElement("text"), _el$15 = _$createElement("text"), _el$16 = _$createElement("text");
-                      _$insertNode(_el$11, _el$12);
-                      _$setProp(_el$11, "width", "100%");
-                      _$setProp(_el$11, "paddingLeft", 1);
-                      _$setProp(_el$11, "paddingRight", 1);
-                      _$setProp(_el$11, "onMouseUp", (event) => {
+                      var _el$14 = _$createElement("box"), _el$15 = _$createElement("box"), _el$16 = _$createElement("text"), _el$17 = _$createElement("text"), _el$18 = _$createElement("text"), _el$19 = _$createElement("text");
+                      _$insertNode(_el$14, _el$15);
+                      _$setProp(_el$14, "width", "100%");
+                      _$setProp(_el$14, "paddingLeft", 1);
+                      _$setProp(_el$14, "paddingRight", 1);
+                      _$setProp(_el$14, "onMouseUp", (event) => {
                         if (event.button !== 0)
                           return;
                         jump(entry.index);
                         toggleAt(entry.index);
                       });
-                      _$insertNode(_el$12, _el$13);
-                      _$insertNode(_el$12, _el$14);
-                      _$insertNode(_el$12, _el$15);
-                      _$insertNode(_el$12, _el$16);
-                      _$setProp(_el$12, "flexDirection", "row");
-                      _$setProp(_el$12, "gap", 1);
-                      _$setProp(_el$13, "wrapMode", "none");
-                      _$insert(_el$13, () => isCursor() ? "\u25B6" : " ");
-                      _$setProp(_el$14, "wrapMode", "none");
-                      _$insert(_el$14, () => entry.row.hidden ? "[x]" : "[ ]");
-                      _$setProp(_el$15, "wrapMode", "none");
-                      _$insert(_el$15, () => entry.row.name);
+                      _$insertNode(_el$15, _el$16);
+                      _$insertNode(_el$15, _el$17);
+                      _$insertNode(_el$15, _el$18);
+                      _$insertNode(_el$15, _el$19);
+                      _$setProp(_el$15, "flexDirection", "row");
+                      _$setProp(_el$15, "gap", 1);
                       _$setProp(_el$16, "wrapMode", "none");
-                      _$insert(_el$16, () => `(${entry.row.modelID})`);
+                      _$insert(_el$16, () => isCursor() ? "\u25B6" : " ");
+                      _$setProp(_el$17, "wrapMode", "none");
+                      _$insert(_el$17, () => entry.row.hidden ? "[x]" : "[ ]");
+                      _$setProp(_el$18, "wrapMode", "none");
+                      _$insert(_el$18, () => entry.row.name);
+                      _$setProp(_el$19, "wrapMode", "none");
+                      _$insert(_el$19, () => `(${entry.row.modelID})`);
                       _$effect((_p$) => {
-                        var _v$6 = rowID(entry.index), _v$7 = isCursor() ? TEXT_BOLD : TEXT_NONE, _v$8 = isCursor() ? theme().text?.selected || "cyan" : theme().text?.base || "white", _v$9 = entry.row.hidden ? "yellow" : theme().text?.muted || "gray", _v$0 = isCursor() ? TEXT_BOLD : TEXT_NONE, _v$1 = isCursor() ? theme().text?.selected || "cyan" : theme().text?.base || "white", _v$10 = theme().text?.muted || "gray";
-                        _v$6 !== _p$.e && (_p$.e = _$setProp(_el$11, "id", _v$6, _p$.e));
-                        _v$7 !== _p$.t && (_p$.t = _$setProp(_el$13, "attributes", _v$7, _p$.t));
-                        _v$8 !== _p$.a && (_p$.a = _$setProp(_el$13, "fg", _v$8, _p$.a));
-                        _v$9 !== _p$.o && (_p$.o = _$setProp(_el$14, "fg", _v$9, _p$.o));
-                        _v$0 !== _p$.i && (_p$.i = _$setProp(_el$15, "attributes", _v$0, _p$.i));
-                        _v$1 !== _p$.n && (_p$.n = _$setProp(_el$15, "fg", _v$1, _p$.n));
-                        _v$10 !== _p$.s && (_p$.s = _$setProp(_el$16, "fg", _v$10, _p$.s));
+                        var _v$8 = rowID(entry.index), _v$9 = isCursor() ? TEXT_BOLD : TEXT_NONE, _v$0 = isCursor() ? theme().text?.selected || "cyan" : theme().text?.base || "white", _v$1 = entry.row.hidden ? "yellow" : theme().text?.muted || "gray", _v$10 = isCursor() ? TEXT_BOLD : TEXT_NONE, _v$11 = isCursor() ? theme().text?.selected || "cyan" : theme().text?.base || "white", _v$12 = theme().text?.muted || "gray";
+                        _v$8 !== _p$.e && (_p$.e = _$setProp(_el$14, "id", _v$8, _p$.e));
+                        _v$9 !== _p$.t && (_p$.t = _$setProp(_el$16, "attributes", _v$9, _p$.t));
+                        _v$0 !== _p$.a && (_p$.a = _$setProp(_el$16, "fg", _v$0, _p$.a));
+                        _v$1 !== _p$.o && (_p$.o = _$setProp(_el$17, "fg", _v$1, _p$.o));
+                        _v$10 !== _p$.i && (_p$.i = _$setProp(_el$18, "attributes", _v$10, _p$.i));
+                        _v$11 !== _p$.n && (_p$.n = _$setProp(_el$18, "fg", _v$11, _p$.n));
+                        _v$12 !== _p$.s && (_p$.s = _$setProp(_el$19, "fg", _v$12, _p$.s));
                         return _p$;
                       }, {
                         e: undefined,
@@ -380,18 +410,22 @@ var tui_default = Plugin.define({
                         n: undefined,
                         s: undefined
                       });
-                      return _el$11;
+                      return _el$14;
                     })();
                   }
                 }), null);
                 _$effect((_p$) => {
-                  var _v$4 = position() === 0 ? 0 : 1, _v$5 = theme().text?.selected || "cyan";
+                  var _v$4 = position() === 0 ? 0 : 1, _v$5 = theme().text?.selected || "cyan", _v$6 = theme().text?.selected || "cyan", _v$7 = theme().text?.muted || "gray";
                   _v$4 !== _p$.e && (_p$.e = _$setProp(_el$0, "marginTop", _v$4, _p$.e));
-                  _v$5 !== _p$.t && (_p$.t = _$setProp(_el$10, "fg", _v$5, _p$.t));
+                  _v$5 !== _p$.t && (_p$.t = _$setProp(_el$11, "fg", _v$5, _p$.t));
+                  _v$6 !== _p$.a && (_p$.a = _$setProp(_el$12, "fg", _v$6, _p$.a));
+                  _v$7 !== _p$.o && (_p$.o = _$setProp(_el$13, "fg", _v$7, _p$.o));
                   return _p$;
                 }, {
                   e: undefined,
-                  t: undefined
+                  t: undefined,
+                  a: undefined,
+                  o: undefined
                 });
                 return _el$0;
               })()
@@ -400,7 +434,8 @@ var tui_default = Plugin.define({
             return _el$5;
           }
         }), _el$6);
-        _$insertNode(_el$6, _$createTextNode(`space toggles \xB7 \u2191/\u2193 moves \xB7 enter/esc closes \xB7 wheel scrolls`));
+        _$insertNode(_el$6, _$createTextNode(`space toggles row \xB7 click provider header toggles all its models \xB7 \u2191/\u2193 moves \xB7 enter/esc closes \xB7 wheel scrolls`));
+        _$setProp(_el$6, "wrapMode", "none");
         _$effect((_p$) => {
           var _v$ = theme().text?.base || "white", _v$2 = theme().text?.muted || "gray", _v$3 = theme().text?.muted || "gray";
           _v$ !== _p$.e && (_p$.e = _$setProp(_el$2, "fg", _v$, _p$.e));

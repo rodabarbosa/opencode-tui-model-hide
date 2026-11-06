@@ -89,6 +89,10 @@ npm publish         # requires `npm login`; prepublishOnly runs the build
 - Rows are sorted once by providerID → name → modelID; the provider grouping in the
   view must keep each row's **global index** (`entry.index`) — cursor, `reveal()` and
   `scrollChildIntoView` depend on it.
+- The provider header is a mouse target (`onMouseUp` → `toggleProvider`), not a cursor
+  row: it has no catalog index and must stay outside the row index plumbing. Its marker
+  is `[x]` when all the provider's models are hidden, `[~]` when some are, `[ ]` when
+  none are; the toggle hides all when any is visible.
 - Persistence is serialized through `queue` with last-write-wins; do not fire `set`
   calls in parallel.
 - Heights/scroll are terminal-derived (`renderer.height`, ~78%), not fixed caps; keep

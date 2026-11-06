@@ -1,6 +1,6 @@
 {
   "name": "opencode-tui-model-hide",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "/hide-model command that hides models from the OpenCode /models selector",
   "type": "module",
   "exports": {
